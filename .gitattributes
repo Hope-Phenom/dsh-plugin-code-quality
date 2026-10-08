@@ -1,0 +1,9 @@
+# Line endings are load-bearing here.
+#
+# The bodies in lib/prompts/ are shipped to the model verbatim, and
+# test/prompts.test.js rejects a CR anywhere in them. `core.autocrlf=true`
+# (the usual Windows default, and the setting on the machine this was written
+# on) rewrites text files to CRLF on checkout, which would silently turn a
+# passing build into a failing one after a fresh clone. Pin LF for every text
+# file in this repository, whatever the host configuration says.
+* text=auto eol=lf

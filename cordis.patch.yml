@@ -1,0 +1,13 @@
+# Bundle patch of dsh-plugin-code-quality.
+#
+# One Host row carries both ported commands. The plugin registers its skills
+# through `ctx.skills.register()`, so there is no separate client half: the
+# Web composer discovers skill rows from the host `skills/list` Remote and a
+# user-invocable skill needs no browser-side registration of its own.
+#
+# The row id is the plugin's stable identity in the profile patch
+# (`- id: code-quality`) and in the Settings plugin list, so keep it stable
+# across versions even if the package name ever changes.
+- insert:
+    - id: code-quality
+      name: dsh-plugin-code-quality

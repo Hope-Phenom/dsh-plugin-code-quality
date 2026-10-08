@@ -1,0 +1,58 @@
+{
+  "name": "dsh-plugin-code-quality",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness plugin adding two code-quality commands as user-invocable skills: /simplify (behavior-preserving cleanups over the current diff) and /code-review (multi-angle bug hunt with an independent verifier pass), plus /review as an alias.",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "dsh-plugin",
+    "skill",
+    "code-review",
+    "simplify",
+    "refactor",
+    "diff"
+  ],
+  "license": "MIT",
+  "author": "Hope.Phenom",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./skills": "./lib/skills.js",
+    "./prompts/simplify": "./lib/prompts/simplify.js",
+    "./prompts/code-review": "./lib/prompts/code-review.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "verify": "node tools/verify.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hope-Phenom/dsh-plugin-code-quality.git"
+  },
+  "homepage": "https://github.com/Hope-Phenom/dsh-plugin-code-quality#readme",
+  "bugs": {
+    "url": "https://github.com/Hope-Phenom/dsh-plugin-code-quality/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
