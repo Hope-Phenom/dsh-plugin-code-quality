@@ -138,6 +138,24 @@ const checks = [
     },
   },
   {
+    id: 'prompts/revert-boundary',
+    check() {
+      // Regression guard for the first end-to-end finding: /simplify must never
+      // be able to undo the change set, even when the whole diff is a
+      // regression and a workspace rule says the test suite must pass.
+      const required = [
+        [/git checkout/u, 'the forbidden git commands'],
+        [/git restore/u, '`git restore`'],
+        [/failing test/iu, 'the failing-test rule'],
+        [/workspace rule/iu, 'the workspace-rule precedence rule'],
+      ]
+      for (const [pattern, what] of required) {
+        if (!pattern.test(SIMPLIFY_PROMPT)) throw new Error(`simplify body is missing ${what}`)
+      }
+      return 'the change set cannot be undone, and a workspace rule cannot authorize it'
+    },
+  },
+  {
     id: 'prompts/dsh-tooling',
     check() {
       const required = {

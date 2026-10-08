@@ -60,6 +60,17 @@ test('both bodies reference only the AGENTS-family instruction files', () => {
   }
 })
 
+test('the simplify body closes the revert escape hatch', () => {
+  // Found by the first end-to-end run: given a diff whose every change was a
+  // regression and a workspace rule saying the test suite must pass, the agent
+  // reasoned that "restoring HEAD is the simplification" and undid the change
+  // set. These clauses are the fix, so they are load-bearing.
+  assert.match(SIMPLIFY_PROMPT, /git checkout/u, 'must name the git commands it forbids')
+  assert.match(SIMPLIFY_PROMPT, /git restore/u, 'must name `git restore` among the forbidden actions')
+  assert.match(SIMPLIFY_PROMPT, /failing test/iu, 'must rule out repairing a failing test')
+  assert.match(SIMPLIFY_PROMPT, /workspace rule/iu, 'must say a workspace rule does not widen the remit')
+})
+
 test('both bodies use the DSH subagent tool and pin same-step fan-out', () => {
   for (const { label, text } of BODIES) {
     assert.match(text, /subagent/u, `${label} body must name the subagent tool`)

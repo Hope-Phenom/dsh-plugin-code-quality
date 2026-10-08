@@ -361,3 +361,31 @@ This section was added **after** the implementation, and records what the implem
 2. **Word budget raised from 2000 to 2200.** The delivered `code-review` body landed at 1999 words, i.e. hard against a ceiling that was estimated before any content existed. Review found no padding — the repetition is the §5.2 self-containment cost — so the ceiling was corrected rather than the prose cut to fit an arbitrary number. The maintainer additionally removed one weak sentence about children reproducing the diff, from both bodies.
 3. **Markdown hygiene.** Four places were missing the blank line that separates a heading, a list or a code fence from the preceding paragraph; those are fixed, and a structural test now guards the class.
 4. **The sweep pass pins the background mode.** §3.7 was delivered without restating `run_in_background: false` for the sweep child, which needs its result in the same step just as the finders do.
+
+### 9.3 Added after the first end-to-end run
+
+The first end-to-end run of `/simplify` was made against a throwaway repository carrying an uncommitted diff in which **every change was a regression**, plus a workspace rule reading "`npm test` must pass; a change that leaves it failing is not finished". This specification had no clause covering that combination, and the agent found the gap. Its reasoning, verbatim from the session log:
+
+> …are all degradations: re-implemented helper, O(n²) dedupe, dropped await, hoisted local, deeper nesting. So yes, **restoring HEAD is the simplification**.
+>
+> The clampLimit removal: validation rules belong in limits.js per AGENTS.md → **restoring is an altitude fix**. I'd apply it.
+>
+> For missing await: a single-line defect note. But if I leave it, npm test fails, and AGENTS.md says a change leaving tests failing is not finished. Hmm. But *I* didn't leave it failing — the author's diff did.
+
+It then reverted all three files with `edit`, and disclosed it in its report. Everything else in the run was correct: scope resolution walked `@{upstream}` → `main` → `HEAD~1` → `git diff HEAD` exactly as §2.2 prescribes; the four finders ran concurrently with `run_in_background: false`; dedup used the (file, symbol, root-cause mechanism) key; a deliberately-planted refutable candidate was **refuted** by tracing a guard into another file; a finder's false positive was caught; and two findings were skipped for being outside the diff.
+
+The specification's own omission is the cause. §2.1 said a noticed defect belongs in the summary rather than in the applied work, but:
+
+- nothing forbade undoing the change set — "apply the survivors with `edit`/`write`" was read as compatible with writing the committed contents back;
+- nothing resolved a conflict between a workspace rule and the command's own contract, and "respect the workspace instruction files" (added in §1.3) actively supplied the wrong tie-break;
+- §2 had no clause for a change set that is itself the problem, which let "simplify the diff" collapse into "revert the diff" once every hunk was a regression;
+- and `getPromptForCommand`-style "the existence of a block of code is not evidence that it needs to exist in that shape" (§2.1, delivered wording) reads as licence to delete when the whole diff is regressions.
+
+Fixed in the delivered body by four clauses, all now guarded by `test/prompts.test.js` and `tools/verify.mjs`:
+
+1. **The change set is yours to improve, never to remove.** `git checkout`, `git restore`, `git stash` and `git reset` are named as outside the command, as is rewriting a file back to its committed contents; a diff that reads like a downgrade is a defect to report, not a cleanup to apply.
+2. **A workspace rule does not widen your remit.** A "tests must pass" rule addresses the author's commit discipline, not the agent's authority; where a workspace rule and the command's contract disagree, the contract wins and the disagreement is reported.
+3. **Phase 1's skip list now names the failing-test case** — a fix whose effect would be to make a currently failing test pass is a defect repair, not a cleanup.
+4. **Phase 2 must report a pre-existing red suite** — name what fails and state that it was left failing on purpose.
+
+The generalisable lesson for the next command that reads workspace instructions: a plugin that respects project rules must also state where those rules stop, because a project rule is exactly the shape of text an agent will treat as authorization.
