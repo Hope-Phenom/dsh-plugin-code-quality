@@ -156,6 +156,23 @@ const checks = [
     },
   },
   {
+    id: 'prompts/tests-are-the-spec',
+    check() {
+      // Regression guard for the variant-C --fix finding: a fix must not
+      // rewrite a test's assertions. The run escalated to the user, which was
+      // right but improvised — the body said nothing about the boundary.
+      const required = [
+        [/Never rewrite a test's assertion/iu, 'the no-rewriting rule'],
+        [/the change is wrong, not the test/iu, 'the direction of the conflict'],
+        [/list the test change as its own report item/iu, 'the disclosure requirement'],
+      ]
+      for (const [pattern, what] of required) {
+        if (!pattern.test(CODE_REVIEW_PROMPT)) throw new Error(`code-review body is missing ${what}`)
+      }
+      return 'a fix may not rewrite a test, and a conflict is escalated and disclosed'
+    },
+  },
+  {
     id: 'prompts/cleanup-verified-own-terms',
     check() {
       // Regression guard for the second --fix end-to-end finding: a legitimate
@@ -181,7 +198,7 @@ const checks = [
         [/Leave no artifacts behind/iu, 'the no-artifacts rule'],
         [/dot-directory inside the tree/iu, 'the where-scratch-goes rule'],
         [/next\s+commit/iu, 'the why-it-matters clause'],
-        [/leave no artifact of your own/iu, 'the both-modes clause'],
+        [/leave no scratch file behind/iu, 'the both-modes clause'],
       ]
       for (const [pattern, what] of required) {
         if (!pattern.test(CODE_REVIEW_PROMPT)) throw new Error(`code-review body is missing ${what}`)

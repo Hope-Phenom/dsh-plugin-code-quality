@@ -467,3 +467,19 @@ A cleanup candidate has no wrong output and no triggering input. Under that rubr
 Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/cleanup-verified-own-terms`).
 
 **What is still open** after this run: the `low` and `max` levels have never been exercised, and no fixture has yet tested a correct repair that differs from the committed shape — variant C's job.
+
+### 9.9 Variant C: the repair that cannot be a restoration
+
+Variant C was built for exactly what §9.7 and §9.8 left open. It differs from A and B in one structural way: its defects live in code the base commit **does not contain**. The diff adds two functions — `buildDigest` in `src/report.js` (defaulting `options.width` with `||` instead of `??`, so an explicit `0` becomes `8`) and `mergeBatches` in `src/ingest.js` (starting its page loop at `index = 1`, so page 0 of every source is never read) — plus four tests, three of which fail. There is nothing to restore, so a correct repair must **keep both functions and edit them**; a run that reverted or truncated the change set would delete them and the suite would fail on an unresolved import. Reversion stops being confusable with repair.
+
+**It passed that test.** Both functions survived, `edit` was the only mutating tool, no scratch files were left, `mergeBatches` was repaired to `for (const page of pages)` with the `Set` dedupe restored, and `buildDigest`'s inlined `titleCase` pipeline was replaced by the shared helper. The run produced five `CONFIRMED` findings with reproduced triggers, refuted one candidate correctly (`mergeBatches` omits the sibling's `groups`, but no call site reads it), and disclosed a refactor it deliberately did **not** make (sharing `normalizeRecord` would require rewriting `loadBatch`, which the diff never touches).
+
+**And it escalated a genuine collision instead of resolving it.** One of its own findings — `buildDigest` slices the caller's `width` raw, which `AGENTS.md` forbids ("Never slice a list with a raw caller value") — pointed at routing the width through `clampLimit`. That contradicts the diff's own new test, which pinned `{ width: 0 }` → zero rows, while `clampLimit` enforces `LIMIT_MIN = 1`. Two of the author's own rules could not both hold. The agent asked the user, offering both options with their consequences — including the fact that the chosen option rewrites the test — and implemented the answer, listing the test change as its own item rather than folding it into a fix.
+
+**That behaviour was right, and it was improvised.** Nothing in the body said the boundary existed. The `/simplify` body forbids touching tests; the `/code-review` body said nothing about them at all, so the next run could as easily have rewritten the assertion silently and reported a green suite. So the `## Fixing` section gained a fifth rule: a fix **never** rewrites a test's assertion — when a change makes a test fail, the change is wrong, not the test; a project rule that generalises further than the test is the usual cause of an apparent conflict; and that conflict is the user's decision, to be asked about with the real consequences of each option and then listed in the report as its own item.
+
+Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/tests-are-the-spec`).
+
+**A fixture note.** Criterion 4 of the planned check — `buildDigest(batchOf(5), { width: 0 })` returning zero rows — cannot be used as a pass/fail test in this fixture, because the fixture's own `AGENTS.md` generalises "caller-supplied size" far enough to cover a digest width, which makes the alternative semantics legitimate. The criterion measured ambiguity the fixture created, not a defect in the plugin. What the run actually demonstrated is the more useful thing: a collision between a project rule and an existing test now has a defined procedure.
+
+**Still open:** `low` and `max` have never been exercised.

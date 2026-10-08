@@ -68,7 +68,22 @@ test('the code-review body keeps scratch artifacts out of the repository', () =>
     [/Leave no artifacts behind/iu, 'the no-artifacts rule'],
     [/dot-directory inside the tree/iu, 'the where-scratch-goes rule'],
     [/next\s+commit/iu, 'the why-it-matters clause'],
-    [/leave no artifact of your own/iu, 'the both-modes clause'],
+    [/leave no scratch file behind/iu, 'the both-modes clause'],
+  ]
+  for (const [pattern, what] of required) {
+    assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)
+  }
+})
+
+test('the code-review body forbids rewriting a test to match a fix', () => {
+  // Found by the variant-C --fix run: a project rule generalised further than
+  // an existing test did, and the agent escalated to the user. Correct — but
+  // improvised, because nothing in the body said the boundary existed, so the
+  // next run could equally have rewritten the test silently.
+  const required = [
+    [/Never rewrite a test's assertion/iu, 'the no-rewriting rule'],
+    [/the change is wrong, not the test/iu, 'the direction of the conflict'],
+    [/list the test change as its own report item/iu, 'the disclosure requirement'],
   ]
   for (const [pattern, what] of required) {
     assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)
