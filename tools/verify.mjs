@@ -156,6 +156,40 @@ const checks = [
     },
   },
   {
+    id: 'prompts/cleanup-verified-own-terms',
+    check() {
+      // Regression guard for the second --fix end-to-end finding: a legitimate
+      // dead-code finding was refuted for having no behavioural impact, which
+      // is true of every cleanup finding.
+      const required = [
+        [/verified on its own terms/iu, 'the separate-standard clause'],
+        [/no behavioural impact/iu, 'the no-behavioural-impact rule'],
+        [/every cleanup finding has none/iu, 'the reason it does not count'],
+      ]
+      for (const [pattern, what] of required) {
+        if (!pattern.test(CODE_REVIEW_PROMPT)) throw new Error(`code-review body is missing ${what}`)
+      }
+      return 'a cleanup candidate is judged on whether its mechanism holds, not on behaviour'
+    },
+  },
+  {
+    id: 'prompts/no-scratch-artifacts',
+    check() {
+      // Regression guard for the second --fix end-to-end finding: the
+      // comparison harness lived inside the tree and survived the run.
+      const required = [
+        [/Leave no artifacts behind/iu, 'the no-artifacts rule'],
+        [/dot-directory inside the tree/iu, 'the where-scratch-goes rule'],
+        [/next\s+commit/iu, 'the why-it-matters clause'],
+        [/leave no artifact of your own/iu, 'the both-modes clause'],
+      ]
+      for (const [pattern, what] of required) {
+        if (!pattern.test(CODE_REVIEW_PROMPT)) throw new Error(`code-review body is missing ${what}`)
+      }
+      return 'scratch harnesses stay out of the tree in both modes'
+    },
+  },
+  {
     id: 'prompts/fanout-not-optional',
     check() {
       // Regression guard for the first /code-review end-to-end finding: the

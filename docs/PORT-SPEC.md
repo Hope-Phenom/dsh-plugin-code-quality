@@ -435,3 +435,35 @@ Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/fix-means-res
 **Note on the word budget.** This raise (2200 → 2500) is the second one, both forced by clauses added after end-to-end findings rather than by padding. The guard's purpose is to catch padding, and review found none, but a third raise should be met with a real trim of the bodies instead.
 
 **Still unverified:** the `low` and `max` levels have never been exercised, and no run has yet confirmed that a `--fix` on a fixture whose correct repair differs from the committed shape keeps its hands off behaviour the tests do not pin. A variant whose defects are *additions* rather than deletions would settle that, and is the natural next fixture.
+
+### 9.7 Verified after 9.6, and one artifact rule it exposed
+
+The second `--fix` run passed every check that the first one failed. It restored the deleted code rather than redesigning the region: findings 3 and 4 were repaired by writing HEAD's own line back (`if (record.name.length === 0 || seen.has(record.id)) continue`), so `src/limits.js` ended byte-identical to HEAD. All three decisive probes matched the pre-change behaviour — duplicate ids with different contents resolve to `["FIRST"]` (first-wins, not the earlier `["SECOND"]`), `label: 42` yields `["a","b"]`, and two `NaN` ids still collapse to one. The report carried the per-finding table §9.6 asked for, in which every row names what was restored **and** the output observed after re-running that finding's own trigger (`F1 REJECTED as HEAD did: audit refused an empty batch`, `exit=0` where the pre-fix run had `exit=1`; `clampLimit('20')→TypeError`, `0/-1→RangeError`; `20 000 items -> 9 ms` against ~900 ms; 14 tag-helper inputs; 6 option combinations for the report shape). It also disclosed the one residual difference from HEAD it did not remove.
+
+**What it exposed.** The restore rule added in 9.6 tells the agent to compare against the pre-change code, which makes a scratch harness the natural tool — and nothing said where that harness may live. The run left `.verify/` behind: seven files including a comparison script, two captured outputs and a copy of `text.js` at `HEAD`, untracked and not ignored, sitting in the repository root where the user's next commit would pick it up. A verifier even recorded it as "the pre-existing untracked `.verify/`", which is what an artifact looks like once the parent has stopped thinking about it.
+
+**Fix.** The code-review body now states the rule in the intro for both modes ("Either way, leave no artifact of your own in the working tree") and as a bullet under `## Fixing`: scratch harnesses, comparison copies and captured output belong outside the repository — a temporary directory, not a dot-directory inside the tree — and when the run finishes the working tree must contain the fixes and nothing else. Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/no-scratch-artifacts`).
+
+**Still open:** the `low` and `max` levels, and a fixture whose correct repair differs from the committed shape (defects as additions rather than deletions), which is what variant C is for.
+
+### 9.8 Added after the same run: a cleanup candidate could never be confirmed
+
+The second `--fix` run refuted one candidate and left it unfixed: the dead `LEGACY_PAGE_SIZE` constant planted in `src/report.js`. Its reasoning, verbatim from the report:
+
+> 唯一被 REFUTED 的是 `src/report.js:5` 的 `LEGACY_PAGE_SIZE`：仓库内无任何引用、无 linter、无行为影响，判定为噪音而非缺陷，故未改动。
+
+"Nothing in the repository references it" is a **confirmation** of that finding. The stated ground for dropping it — no behavioural impact — is true of every cleanup finding there has ever been, so it cannot be the test.
+
+**Cause, and it is this specification's.** §3.6 defined the three verdicts entirely in the language of defects:
+
+- `CONFIRMED` — "the mechanism was reproduced, and the inputs producing the wrong output can be named and pointed at on a line";
+- `PLAUSIBLE` — "the mechanism is real but the trigger is uncertain";
+- and the mandatory evidence step asked the verifier to "state the one specific input or state that triggers the failure — or say why none exists".
+
+A cleanup candidate has no wrong output and no triggering input. Under that rubric it can only ever be `PLAUSIBLE` or `REFUTED`, and the run's verifier followed the rubric correctly and refuted it. The `high` run had reported the same constant among its findings, so the failure is intermittent rather than systematic — which is exactly what an ambiguous rubric produces.
+
+**Fix.** Phase 2 gained a ninth item: a cleanup candidate is verified **on its own terms** — its mechanism *is* the claim, so it is verified by searching the repository and diffing against the shared implementation and the pre-change code; a verifier must not reach for a failing input and must not refute it for having no behavioural impact, because every cleanup finding has none; `CONFIRMED` means the mechanism holds, and `REFUTED` means the code is in fact referenced, distinct, or not a re-implementation. The following two items were renumbered.
+
+Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/cleanup-verified-own-terms`).
+
+**What is still open** after this run: the `low` and `max` levels have never been exercised, and no fixture has yet tested a correct repair that differs from the committed shape — variant C's job.

@@ -60,6 +60,37 @@ test('both bodies reference only the AGENTS-family instruction files', () => {
   }
 })
 
+test('the code-review body keeps scratch artifacts out of the repository', () => {
+  // Found by the second --fix end-to-end run: the comparison harness the new
+  // restore rule encourages was left in the tree as an untracked `.verify/`
+  // directory, which the user's next commit would have picked up.
+  const required = [
+    [/Leave no artifacts behind/iu, 'the no-artifacts rule'],
+    [/dot-directory inside the tree/iu, 'the where-scratch-goes rule'],
+    [/next\s+commit/iu, 'the why-it-matters clause'],
+    [/leave no artifact of your own/iu, 'the both-modes clause'],
+  ]
+  for (const [pattern, what] of required) {
+    assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)
+  }
+})
+
+test('the code-review body gives cleanup candidates their own verification standard', () => {
+  // Found by the second --fix end-to-end run: a verifier confirmed a dead
+  // constant was unreferenced, then dropped it for having "no behavioural
+  // impact" — which is true of every cleanup finding. The verdict labels were
+  // defined only in terms of wrong output, so no cleanup candidate could ever
+  // be CONFIRMED.
+  const required = [
+    [/verified on its own terms/iu, 'the separate-standard clause'],
+    [/no behavioural impact/iu, 'the no-behavioural-impact rule'],
+    [/every cleanup finding has none/iu, 'the reason it does not count'],
+  ]
+  for (const [pattern, what] of required) {
+    assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)
+  }
+})
+
 test('the simplify body closes the revert escape hatch', () => {
   // Found by the first end-to-end run: given a diff whose every change was a
   // regression and a workspace rule saying the test suite must pass, the agent
