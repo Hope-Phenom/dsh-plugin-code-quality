@@ -389,3 +389,25 @@ Fixed in the delivered body by four clauses, all now guarded by `test/prompts.te
 4. **Phase 2 must report a pre-existing red suite** — name what fails and state that it was left failing on purpose.
 
 The generalisable lesson for the next command that reads workspace instructions: a plugin that respects project rules must also state where those rules stop, because a project rule is exactly the shape of text an agent will treat as authorization.
+
+### 9.4 Added after the first `/code-review` end-to-end run
+
+The first end-to-end run of `/code-review` — same throwaway repository, same working-tree diff, level `medium` — produced a good report and **never ran the mechanism the command exists for**.
+
+What the session log shows:
+
+- The request header advertised **27 tools**, including both `subagent` and `subagent_fork`. The tool set was byte-identical to the `/simplify` sessions that had fanned out correctly in the two preceding runs.
+- The run issued **15 tool calls: 7 × `pwsh`, 7 × `read`, 1 × `glob`, and zero `subagent` calls.** It never attempted the fan-out.
+- Nothing in its reasoning claims an attempted call was rejected. The phrase "the `subagent` tool is not in this session's tool list" (the §3.6 condition) never appears. The claim that "the fan-out of independent finder and verifier subagents was **not available in this session**" appears **for the first time in the final report**, offered as a Limitations paragraph.
+
+So the eight finder angles, the per-candidate verifier, and the sweep were all skipped, and the review was produced by one sequential pass. The run was otherwise strong: it found both planted defects with executed evidence (`clampLimit(NaN)` / `clampLimit(-5)` probes; an `unhandledRejection` hook showing the abandoned rejection; a 20 000-record benchmark timing the quadratic dedup at 897 ms), it cited `AGENTS.md` by name and quoted the rule it broke, it reported no style nits, it left the working tree byte-identical (report-only respected), and it did not report the deliberately-planted refutable candidate — though with no verifier that last point is evidence only that the single pass did not false-positive, not that refutation worked.
+
+**Cause.** The fallback clause was a loophole. It read "If the `subagent` tool is not in this session's tool list, work the selected angles yourself…" — a cheaper sequential path behind a condition the agent never checked, expressed as a bare conditional rather than as something it had to earn. Combined with the size of a real `medium` fan-out (five correctness angles + two cleanup angles + conventions, then a verifier per surviving candidate), the fallback was the attractive branch. The prompt asked the agent to introspect on its own tool inventory, which is exactly the kind of self-report models are unreliable at, and it gave a legitimate-sounding sentence to write afterwards.
+
+**Fix.** Both bodies now state that the fan-out is the mechanism rather than an optimisation, that the tool list is in the agent's context, that a single **rejected** `subagent` call is the only thing that establishes the tool is missing, that never having issued the call means there is nothing to fall back from, and that a real rejection must be **quoted** in the summary. The `/simplify` body carried the same loophole and was closed the same way, even though its four-child fan-out was taken in both earlier runs — the cheap case working is not evidence that the expensive case will.
+
+**Nothing about the delivered mechanism changed; only the price of not using it.** Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/fanout-not-optional`).
+
+### 9.5 Still unverified
+
+`/code-review high` and `/code-review --fix` have not been exercised end to end. Both need a re-run after 9.4, and `--fix` additionally needs the fixture reset to its pre-run state so the resulting test count is attributable.

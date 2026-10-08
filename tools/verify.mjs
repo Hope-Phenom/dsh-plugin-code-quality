@@ -156,6 +156,26 @@ const checks = [
     },
   },
   {
+    id: 'prompts/fanout-not-optional',
+    check() {
+      // Regression guard for the first /code-review end-to-end finding: the
+      // agent declared the fan-out tool unavailable without issuing a single
+      // call, so the finder/verifier mechanism never ran.
+      const required = [
+        [/tool\s+list\s+is in your context/iu, 'the visible-tool-list clause'],
+        [/rejected\s+`subagent`\s+call/iu, 'the requires-an-actual-rejection clause'],
+        [/never\s+issued\s+the\s+call/iu, 'the no-attempt rule'],
+        [/quote\s+the\s+rejection/iu, 'the quote-the-rejection rule'],
+      ]
+      for (const [label, text] of [['simplify', SIMPLIFY_PROMPT], ['code-review', CODE_REVIEW_PROMPT]]) {
+        for (const [pattern, what] of required) {
+          if (!pattern.test(text)) throw new Error(`${label} body is missing ${what}`)
+        }
+      }
+      return 'the fan-out cannot be skipped on a guess in either body'
+    },
+  },
+  {
     id: 'prompts/dsh-tooling',
     check() {
       const required = {

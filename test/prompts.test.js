@@ -71,6 +71,28 @@ test('the simplify body closes the revert escape hatch', () => {
   assert.match(SIMPLIFY_PROMPT, /workspace rule/iu, 'must say a workspace rule does not widen the remit')
 })
 
+test('neither body lets the agent assume the fan-out tool is missing', () => {
+  // Found by the first /code-review end-to-end run: `subagent` was in the
+  // session's tool list (27 tools), the agent issued zero subagent calls, and
+  // its report claimed the fan-out "was not available in this session" — so
+  // the finder/verifier mechanism never ran. The old fallback clause was the
+  // loophole: it offered a cheaper sequential path behind a condition the
+  // agent never checked.
+  for (const { label, text } of BODIES) {
+    const required = [
+      [/tool\s+list\s+is in your context/iu, 'must say the tool list is visible'],
+      [/rejected\s+`subagent`\s+call/iu, 'must require an actual rejection'],
+      [/never\s+issued\s+the\s+call/iu, 'must rule out the no-attempt fallback'],
+      [/quote\s+the\s+rejection/iu, 'must require the rejection to be quoted'],
+    ]
+    for (const [pattern, why] of required) {
+      // assert.ok rather than assert.match: a failure should print one line,
+      // not the whole prompt body.
+      assert.ok(pattern.test(text), `${label} body ${why}`)
+    }
+  }
+})
+
 test('both bodies use the DSH subagent tool and pin same-step fan-out', () => {
   for (const { label, text } of BODIES) {
     assert.match(text, /subagent/u, `${label} body must name the subagent tool`)
