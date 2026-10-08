@@ -120,7 +120,7 @@ const checks = [
       for (const [label, text] of [['simplify', SIMPLIFY_PROMPT], ['code-review', CODE_REVIEW_PROMPT]]) {
         const count = words(text)
         if (count < 600) throw new Error(`${label} body is only ${count} words`)
-        if (count > 2200) throw new Error(`${label} body is ${count} words`)
+        if (count > 2500) throw new Error(`${label} body is ${count} words`)
         report.push(`${label}=${count}w`)
       }
       return report.join(' ')
@@ -173,6 +173,26 @@ const checks = [
         }
       }
       return 'the fan-out cannot be skipped on a guess in either body'
+    },
+  },
+  {
+    id: 'prompts/fix-means-restore',
+    check() {
+      // Regression guard for the first --fix end-to-end finding: surplus
+      // machinery changed dedup semantics on an input the suite could not
+      // distinguish, and the post-fix "verification" claimed a behaviour the
+      // code did not exhibit.
+      const required = [
+        [/restoration rather than a redesign/iu, 'the restoration framing'],
+        [/surplus machinery/iu, 'the no-surplus-machinery rule'],
+        [/git show HEAD:/u, 'the compare-against-pre-change rule'],
+        [/inputs the tests do not cover/iu, 'the untested-inputs rule'],
+        [/observation, not an expectation/iu, 'the observation-not-expectation rule'],
+      ]
+      for (const [pattern, what] of required) {
+        if (!pattern.test(CODE_REVIEW_PROMPT)) throw new Error(`code-review body is missing ${what}`)
+      }
+      return 'a fix must restore the removed behaviour, and its verification must be an observation'
     },
   },
   {

@@ -31,7 +31,7 @@ test('both bodies are substantial documents, not stubs', () => {
   for (const { label, text } of BODIES) {
     const words = wordCount(text)
     assert.ok(words >= 600, `${label} body is only ${words} words`)
-    assert.ok(words <= 2200, `${label} body is ${words} words, over the budget`)
+    assert.ok(words <= 2500, `${label} body is ${words} words, over the budget`)
   }
 })
 
@@ -69,6 +69,24 @@ test('the simplify body closes the revert escape hatch', () => {
   assert.match(SIMPLIFY_PROMPT, /git restore/u, 'must name `git restore` among the forbidden actions')
   assert.match(SIMPLIFY_PROMPT, /failing test/iu, 'must rule out repairing a failing test')
   assert.match(SIMPLIFY_PROMPT, /workspace rule/iu, 'must say a workspace rule does not widen the remit')
+})
+
+test('the code-review body defines what fixing means', () => {
+  // Found by the first --fix end-to-end run: it rewrote a dedup loop with
+  // surplus machinery (a Map index it did not need), flipping duplicate-id
+  // handling from first-wins to last-wins on an input the suite could not
+  // distinguish, and then reported "non-string-name records are kept" as a
+  // verification result while the code still dropped them.
+  const required = [
+    [/restoration rather than a redesign/iu, 'the restoration framing'],
+    [/surplus machinery/iu, 'the no-surplus-machinery rule'],
+    [/git show HEAD:/u, 'the compare-against-pre-change rule'],
+    [/inputs the tests do not cover/iu, 'the untested-inputs rule'],
+    [/observation, not an expectation/iu, 'the observation-not-expectation rule'],
+  ]
+  for (const [pattern, what] of required) {
+    assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)
+  }
 })
 
 test('neither body lets the agent assume the fan-out tool is missing', () => {

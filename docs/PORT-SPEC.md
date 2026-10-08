@@ -261,7 +261,7 @@ Children share no context. Every child prompt must contain, in full:
 
 ## 5. Quality bar for the prompts themselves
 
-- **Length discipline.** Each body should be a focused document, roughly 600–2200 words. Long enough to pin down the contract, short enough that an agent follows it instead of skimming. Do not pad with restatements.
+- **Length discipline.** Each body should be a focused document, roughly 600–2500 words. Long enough to pin down the contract, short enough that an agent follows it instead of skimming. Do not pad with restatements.
 - **Structure.** Markdown headings, numbered phases, and tables. Do **not** use XML tags — the host already wraps the body in `<skill_content>`, and no controlled study shows XML beating markdown anyway; markdown is chosen for consistency with the host's own prompts.
 - **Tone, not volume.** Plain, direct imperatives. Do **not** use all-caps emphasis, "CRITICAL", "YOU MUST ALWAYS", or alarm language: recent models over-trigger on it, and the result is worse compliance, not better. Intensity comes from the specificity of the requirement, never from shouting.
 - **Explain the cost rather than only forbidding.** Where a rule guards a real failure mode — padding, self-censoring, ungrounded verdicts — say *why* in one clause. A rule whose purpose is visible is followed far more reliably than a bare prohibition, and "do not pad" on its own pushes against a bias the model already has in the wrong direction.
@@ -332,7 +332,7 @@ Your output will be checked mechanically for at least:
 - neither body contains XML-tag framing such as `<skill_instructions>` or `<system-reminder>`;
 - neither body contains emoji;
 - both prompt files use LF endings, end with exactly one newline, and carry no trailing whitespace;
-- both bodies are between 600 and 2200 words.
+- both bodies are between 600 and 2500 words.
 
 ---
 
@@ -408,6 +408,30 @@ So the eight finder angles, the per-candidate verifier, and the sweep were all s
 
 **Nothing about the delivered mechanism changed; only the price of not using it.** Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/fanout-not-optional`).
 
-### 9.5 Still unverified
+### 9.5 Verified after 9.4, and what is still open
 
-`/code-review high` and `/code-review --fix` have not been exercised end to end. Both need a re-run after 9.4, and `--fix` additionally needs the fixture reset to its pre-run state so the resulting test count is attributable.
+`/code-review high` was re-run after 9.4 and behaved exactly as designed: **11 finders** (C1–C6, Reuse, Simplification, Efficiency, Altitude, Conventions — matching the `high` row of §3.3 plus the unconditional conventions angle), **9 verifiers**, one per deduplicated candidate, and **1 sweep**, for 21 `subagent` calls with none fabricated as unavailable. It reported all seven expected findings with executed evidence, and it **refuted three candidates**, including the deliberately planted `groupSize`-bypasses-`clampLimit` trap, with the reasoning that the validation is owned by `chunk` in `src/text.js`. That closes the last untested mechanism in §3.6: the finder/verifier split and the adversarial refutation are now demonstrated end to end, not merely specified.
+
+### 9.6 Added after the first `--fix` end-to-end run
+
+`/code-review --fix` reached the target state — `npm test` went 8/12 → 12/12, and the tree was edited with `edit`, never reverted with `git checkout` — but two of its repairs were wrong in ways the suite could not see.
+
+**First: surplus machinery changed behaviour.** Findings 4 (the O(n²) dedup) and 5 (`===` losing the `Set`'s SameValueZero handling of `NaN` ids) were repaired with a `Set` plus a `Map` index that replaces an earlier duplicate **in place**. That extra index was not required by either finding: re-running the deleted four lines (`seen.has` → `continue`, else `add` and `push`) already satisfies O(1), first-wins ordering and SameValueZero together. The replacement flipped duplicate handling from first-wins to last-wins, which the fixture's dedup test cannot detect because its duplicate records are byte-identical:
+
+| Probe input | Pre-change | After `--fix` |
+|---|---|---|
+| two records, same id, different labels | `["FIRST"]` | `["SECOND"]` |
+| `label: 42` (non-string name) | `["a","b"]` | `["b"]` |
+| two `NaN` ids | 1 kept | 1 kept |
+
+**Second: the post-fix verification was an expectation, not an observation.** The report listed "non-string-name records are kept" among its verification results, but the predicate it wrote — `typeof record.name !== 'string' \|\| record.name.length === 0` — `continue`s on a non-string name, so those records are still dropped. The polarity is inverted relative to what the run believed it had written, and the claim was never executed.
+
+**Cause.** §3.2 defined `--fix` in a single clause: "apply the findings that survive after you report them". Nothing said what a *fix* is. `/simplify` carries a full apply-discipline (skip behaviour-changing repairs, never shrink the change set, re-check before acting); `--fix` had none of it, so "repair the finding" was free to become "rewrite the region, better".
+
+**Fix.** A new `## Fixing (--fix)` section in the code-review body requires: a fix is a **restoration**, not a redesign; do not add a type check, an index or a guard the finding did not ask for, because surplus machinery is where a repair quietly changes semantics; judge behaviour on the inputs the tests do **not** cover, comparing against `git show HEAD:<path>`, because a suite that reaches the changed path only through indistinguishable inputs is not evidence; re-run each finding's own trigger afterwards and report what it **printed**, since post-fix verification is an observation and never an expectation; and state per finding what each change restores rather than only that the suite is green.
+
+Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/fix-means-restore`).
+
+**Note on the word budget.** This raise (2200 → 2500) is the second one, both forced by clauses added after end-to-end findings rather than by padding. The guard's purpose is to catch padding, and review found none, but a third raise should be met with a real trim of the bodies instead.
+
+**Still unverified:** the `low` and `max` levels have never been exercised, and no run has yet confirmed that a `--fix` on a fixture whose correct repair differs from the committed shape keeps its hands off behaviour the tests do not pin. A variant whose defects are *additions* rather than deletions would settle that, and is the natural next fixture.
