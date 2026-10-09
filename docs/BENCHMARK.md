@@ -114,7 +114,7 @@ the row mapping (`src/report.js`).
 | 14 | Model-initiated `simplify` (via the `skill` tool) | A | **run** — passed; `code-review` refused with a clean error |
 | 15 | Plugin disable / uninstall | — | **not runnable here** — see 4.13 |
 | 16 | Non-git directory | copy of A | **run** — failed; surveyed the whole tree instead of stopping |
-| 17 | Large diff (tens of files) | new fixture | not run |
+| 17 | Large diff (tens of files) | `dsh-bench-large` | **run** — passed; 20 files, and the long-diff branch sent reproduction commands instead of diff text |
 
 Cases 8–10, 12 and 14 need no new fixture. Cases 13 and 17 do. Cases 15 and 16 are environment cases.
 
@@ -322,6 +322,35 @@ the profile boots without a dangling row; then toggle it on and confirm they ret
 already evidenced — the row id the override must target is `code-quality`, and the plugin manager writes
 exactly `disabled: !enabled` on the matched item.
 
+### 4.14 Case 17 — twenty files, and the long-diff branch
+
+**Passed, and it exercised the one branch nothing else had.** The fixture is a new repository, `dsh-bench-large`:
+twenty modules committed in a clean state, then all twenty rewritten in the working tree so that each drops its
+argument guard and substitutes `return (value || N) * N`. The diff is 20 files, 780 lines, 24 KB — not short.
+
+- **Scope held.** All twenty files and twenty hunks were in scope; nothing was truncated.
+- **The long-diff branch works.** The body says a child's prompt carries "the diff text when it is short and
+  otherwise the exact reproduction commands with a note that they already ran", and the run quoted that rule
+  and sent `git diff HEAD`, per-file `git diff HEAD -- <path>` and `git show HEAD:<path>` instead of the text.
+  It also noticed `core.autocrlf` filling the output with warnings and adapted with `-c core.safecrlf=false`.
+- **One finder per angle, conventions included** — 8 finders and 8 fresh verifiers, 16 calls. The A1 fix holds
+  at a fourth site.
+- **Dedup worked and one refutation was sharp.** Fifty candidate lines collapsed to eight mechanisms; the
+  refuted one claimed `scale20(1e308)` returns `Infinity` where HEAD did not, and the verifier killed it by
+  observing that HEAD returns `Infinity` for that input too — the deleted guards constrained the argument,
+  never the product.
+- No scratch files; the tree held only the twenty modified files afterwards.
+
+**A latent tension, recorded rather than patched.** The dedup key is `(file, symbol, root-cause mechanism)`,
+which is **per file**, while the report cap is **global** — 8 at `medium`. Twenty occurrences of one identical
+rewrite are therefore twenty keys but one mechanism, and the run resolved that by collapsing them into a single
+finding that names the first file and states in its limitations that the finding "applies verbatim to every
+`src/mNN.js`". That is the better report, and it is not what the key literally says; with twenty *distinct*
+mechanisms the same cap would cut twelve findings, and nothing in the body requires saying so.
+
+The cap did not bind here (7 findings against 8), so **no failure was observed** and no clause was added — the
+project's rule is that every clause carries a run behind it. Both halves of the tension are open items below.
+
 ## 5. Open items
 
 1. ~~Finding L1~~ — fixed and confirmed by cases 9, 12 and 13.
@@ -330,12 +359,17 @@ exactly `disabled: !enabled` on the matched item.
 4. ~~Case 16 (non-git directory)~~ — failed, fixed, recorded in 4.11.
 5. ~~Case 14 (model-invoked)~~ — passed, recorded in 4.12.
 6. Case 15 (disable/uninstall) — not runnable from this environment; procedure recorded in 4.13.
-7. Case 17 (large diff) — not run; needs a fixture of tens of files, and the report it produces would be the
-   largest of the matrix.
-8. `PORT-SPEC.md` §9.10's fallback rule now has evidence for the bare-command case (case 13) and the
-   language-bearing case (case 12); a message naming a language *other* than the user's own has not been run.
-9. The injected path has not been checked against the real path on the same case and fixture. Running a case
-   both ways would settle whether the harness itself changes any verdict.
+7. ~~Case 17 (large diff)~~ — passed, recorded in 4.14.
+8. **Latent tension, no observed failure:** the per-file dedup key against the global report cap. A diff whose
+   distinct mechanisms outnumber the cap would be truncated silently, and the body neither permits collapsing
+   one mechanism across files nor requires disclosing a cut. Needs a fixture of >8 *distinct* mechanisms to
+   turn this into an observed failure — and per the project's rule, only that justifies a clause.
+9. Case 15's runtime half (disable, restart, confirm the three skills leave the `/` menu) awaits a GUI action;
+   the procedure and the mechanical evidence are in 4.13.
+10. `PORT-SPEC.md` §9.10's fallback rule now has evidence for the bare-command case (case 13) and the
+    language-bearing case (case 12); a message naming a language *other* than the user's own has not been run.
+11. The injected path has not been checked against the real path on the same case and fixture. Running a case
+    both ways would settle whether the harness itself changes any verdict.
 
 ## 6. Findings so far
 
