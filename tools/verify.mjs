@@ -211,6 +211,23 @@ const checks = [
     },
   },
   {
+    id: 'prompts/fanout-arithmetic',
+    check() {
+      // Regression guard for the `max` case: cleanup angles were paired into
+      // two children and no separate conventions child ran, because the table's
+      // angle counts were never tied to the number of finder calls.
+      const required = [
+        [/One finder call per angle/iu, 'the one-child-per-angle rule'],
+        [/never two angles to one child/iu, 'the reason pairing is forbidden'],
+        [/conventions angle dispatches at every level/iu, 'the conventions angle level'],
+      ]
+      for (const [pattern, what] of required) {
+        if (!pattern.test(CODE_REVIEW_PROMPT)) throw new Error(`code-review body is missing ${what}`)
+      }
+      return 'the table angle counts are the finder call count, conventions included'
+    },
+  },
+  {
     id: 'prompts/empty-scope',
     check() {
       // Regression guard for the clean-tree case: with an empty diff the run

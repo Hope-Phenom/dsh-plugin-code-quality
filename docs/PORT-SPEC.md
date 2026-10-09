@@ -527,3 +527,13 @@ Two things made it worth fixing rather than noting. The cleanup happened only be
 **Fix.** The Phase 1 dispatch list — what each child's prompt must carry — gained a clause applying to every child the command starts, finder and verifier alike: a probe belongs in a **temporary directory outside the repository**, never in the working tree and not even dot-prefixed, and the child must delete one before returning, because a file left behind contaminates the change set under review. The simplify body carries the same clause in its equivalent bullet.
 
 Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/probe-location`), which require the clause in both bodies because both fan out.
+
+### 9.13 Added after the `max` case: the table's angle counts were never tied to the call count
+
+The level table gives `max` six correctness angles and four cleanup angles. The run dispatched **eight** finder calls — the six correctness angles, then the four cleanup angles paired two to a child (`R+S`, `E+A`) — and ran no separate conventions child at all. The fan-out instruction says "one per angle the level selects", but nothing connected that sentence to the table's numbers, and the conventions angle is documented as an angle without ever being assigned a level. Across the recorded runs the conventions child appears only at `high`.
+
+**Fix.** A sentence between the table and the Phase 3 paragraph: **one finder call per angle the level selects, never two angles to one child — a child asked two questions answers the easier one — and the conventions angle dispatches at every level, on top of the table count.** The `high` and `max` rows were also rewritten from "5 (C1–C5) plus C6" to "6 (C1–C6)", so the arithmetic is readable off the table rather than reconstructed from prose; that change pays for most of the added sentence.
+
+Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/fanout-arithmetic`).
+
+**Not a defect: the result was still good.** All four cleanup angles produced findings, nine findings in total stayed inside the cap of 20, one was ranked `PLAUSIBLE` last as the `max` bias requires, two candidates were refuted with differential evidence, and the Phase 3 sweep ran a fuzz comparison of HEAD against the working tree before returning `NONE`. What the case establishes is that the arithmetic was ambiguous, not that pairing degraded this particular run.

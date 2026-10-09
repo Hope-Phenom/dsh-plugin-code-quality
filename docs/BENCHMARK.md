@@ -105,9 +105,9 @@ the row mapping (`src/report.js`).
 | 6 | `code-review --fix` | A | **run** ×3 — failed, failed, passed |
 | 7 | `code-review --fix` on additions-only defects | C | **run** ×2 — passed; the second escalated a rule collision |
 | 8 | `code-review low` | A | **run** — passed; raised finding L1 below |
-| 9 | `code-review max` | A | not run |
+| 9 | `code-review max` | A | **run** — mechanism passed; raised finding A1 below |
 | 10a | `code-review`, nothing changed | clean clone | **run** — passed, 0 subagent calls, one-line empty report |
-| 10b | `simplify`, nothing changed | clean clone | **run** — **failed**; raised finding S1 below |
+| 10b | `simplify`, nothing changed | clean clone | **run** — failed, then **passed** after the S1 fix |
 | 11 | Explicit target argument | A | **run** — passed, 12 subagent calls, reviewed only the named file |
 | 12 | Report language, and appended guidance | A | not run |
 | 13 | Untracked file inside the diff | new variant D | not run |
@@ -201,13 +201,52 @@ justify the invocation is worse than no work" — by reading the failed ladder a
 *was* the change set. **Status: fixed** by naming the substitution to refuse; see `PORT-SPEC.md` §9.11.
 Re-running case 10b is the check that the fix holds.
 
+### 4.5 Case 9 — `code-review max` on variant A
+
+**Mechanism passed, with one arithmetic deviation.** 17 `subagent` calls: 8 finders, 8 fresh verifiers, and
+the Phase 3 sweep. Nine findings, inside the cap of 20, one of them `PLAUSIBLE` and ranked last as the `max`
+bias requires. The sweep ran a differential fuzz of HEAD against the working tree across `kind` × `limit` ×
+`count` and returned `NONE`. Two candidates were refuted with differential evidence — verifiers reconstructed
+the pre-change modules from `git show HEAD:` and ran old against new on identical stubs, which refuted both
+the claim that the dedup *placement* change alters which record survives and the claim that the section
+construction is duplicated between the `buildReport` branches. The limitations paragraph was unusually
+useful: it ranked the `NaN`-id finding `PLAUSIBLE` because `id: string` is the documented contract and no
+in-repo caller violates it, flagged its own timings as machine-dependent, and noted that a dead `LIMIT_MIN`
+is a corollary of the guard finding rather than an independent mechanism.
+
+**The deviation, and what it proves about the harness.** One finder per angle means ten calls (six
+correctness plus four cleanup) plus the conventions child. The run sent eight, pairing `R+S` and `E+A`, and
+sent no conventions child. All four cleanup angles still produced findings and the conventions rules were
+still cited, so nothing was missed — but the arithmetic was ambiguous, and is now pinned. See `PORT-SPEC.md`
+§9.13.
+
+### 4.6 Case 10b re-run — `simplify` on the clean tree, after the S1 fix
+
+**Passed.** Zero `subagent` calls; the run stopped at scope resolution. It walked the whole ladder, reported
+`master` and `HEAD~1` as non-existent, and stated the fixed rule back almost verbatim: "a repository's
+committed state and a missing parent are not a change set, and reviewing the whole tree is not something to
+invent in its place." It created, modified and deleted nothing, and confirmed the tree was byte-identical
+afterwards. It also checked `npm test` (12/12) and noted that the `AGENTS.md` rule requiring a green suite
+was not engaged because nothing was modified, then told the user what would make the command useful.
+
+**Same harness, opposite outcome**, which is the evidence that the fix — not the harness — changed the
+behaviour.
+
+### 4.7 Evidence that the L1 fix works
+
+Two independent observations in case 9, neither of them solicited: finder and verifier children **reconstructed
+the pre-change modules into `$env:TEMP`** rather than into the tree, and the parent closed by verifying
+`git status --porcelain --untracked-files=all` reported exactly the three modified files and zero untracked.
+Before the fix, the same command left two probe scripts in the repository root.
+
 ## 5. Open items
 
-1. Finding L1 above — unfixed.
-2. Case 9 (`max`), 12 (language), 13 (untracked files), 14 (model-invoked), 15 (disable/uninstall),
-   16 (non-git directory), 17 (large diff).
-3. Re-run case 10b to confirm the S1 fix holds, and re-run case 8 to confirm the L1 fix once it is made.
-4. `PORT-SPEC.md` §9.10's fallback rule has never been exercised with a message that actually carries a
+1. ~~Finding L1~~ — fixed; re-running case 8 confirms it.
+2. ~~Finding S1~~ — fixed; case 10b re-ran clean (see 4.6).
+3. Finding A1 — fixed; re-running case 9 confirms it.
+4. Cases 12 (language), 13 (untracked files), 14 (model-invoked), 15 (disable/uninstall), 16 (non-git
+   directory), 17 (large diff).
+5. `PORT-SPEC.md` §9.10's fallback rule has never been exercised with a message that actually carries a
    language.
-5. The injected path has not been checked against the real path on the same case and fixture. Running case 9
+6. The injected path has not been checked against the real path on the same case and fixture. Running a case
    both ways would settle whether the harness itself changes any verdict.

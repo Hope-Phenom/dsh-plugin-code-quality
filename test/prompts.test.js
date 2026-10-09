@@ -95,6 +95,21 @@ test('both bodies send child probes outside the repository', () => {
   }
 })
 
+test('the code-review body pins the fan-out arithmetic to one child per angle', () => {
+  // Found by the `max` case: the run paired the four cleanup angles into two
+  // children (8 calls where the table implies 10) and dispatched no separate
+  // conventions child. Nothing tied the table's angle counts to the number of
+  // calls, and the conventions angle's level was never stated.
+  const required = [
+    [/One finder call per angle/iu, 'the one-child-per-angle rule'],
+    [/never two angles to one child/iu, 'the reason pairing is forbidden'],
+    [/conventions angle dispatches at every level/iu, 'the conventions angle level'],
+  ]
+  for (const [pattern, what] of required) {
+    assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)
+  }
+})
+
 test('the simplify body refuses to invent a change set from committed history', () => {
   // Found by the clean-tree case. With no derivable range the run treated a
   // single committed root commit as "the code you changed", edited three files
