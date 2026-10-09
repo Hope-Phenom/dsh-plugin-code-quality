@@ -31,7 +31,7 @@ test('both bodies are substantial documents, not stubs', () => {
   for (const { label, text } of BODIES) {
     const words = wordCount(text)
     assert.ok(words >= 600, `${label} body is only ${words} words`)
-    assert.ok(words <= 2500, `${label} body is ${words} words, over the budget`)
+    assert.ok(words <= 2600, `${label} body is ${words} words, over the budget`)
   }
 })
 
@@ -72,6 +72,27 @@ test('the code-review body keeps scratch artifacts out of the repository', () =>
   ]
   for (const [pattern, what] of required) {
     assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)
+  }
+})
+
+test('both bodies key the report language to the user and state a fallback', () => {
+  // Found by a --fix run whose user had typed only `/code-review --fix`: with
+  // no language in the message to read, the agent picked Spanish and never
+  // mentioned it. Also covers appended guidance — `/code-review --fix 用中文汇报`
+  // — which the scope contract used to treat as a possible review target.
+  for (const { label, text } of BODIES) {
+    assert.ok(
+      /language\s+the\s+user\s+has\s+actually\s+written/iu.test(text),
+      `${label} must key the report language to the user's own words`,
+    )
+    assert.ok(
+      /use\s+English rather than picking one/iu.test(text),
+      `${label} must name the fallback language instead of leaving it to a guess`,
+    )
+    assert.ok(
+      /guidance\s+to\s+follow, not a target to resolve/iu.test(text),
+      `${label} must accept extra guidance in the message`,
+    )
   }
 })
 

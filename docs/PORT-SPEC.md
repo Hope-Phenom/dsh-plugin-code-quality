@@ -261,7 +261,7 @@ Children share no context. Every child prompt must contain, in full:
 
 ## 5. Quality bar for the prompts themselves
 
-- **Length discipline.** Each body should be a focused document, roughly 600–2500 words. Long enough to pin down the contract, short enough that an agent follows it instead of skimming. Do not pad with restatements.
+- **Length discipline.** Each body should be a focused document, roughly 600–2600 words. Long enough to pin down the contract, short enough that an agent follows it instead of skimming. Do not pad with restatements.
 - **Structure.** Markdown headings, numbered phases, and tables. Do **not** use XML tags — the host already wraps the body in `<skill_content>`, and no controlled study shows XML beating markdown anyway; markdown is chosen for consistency with the host's own prompts.
 - **Tone, not volume.** Plain, direct imperatives. Do **not** use all-caps emphasis, "CRITICAL", "YOU MUST ALWAYS", or alarm language: recent models over-trigger on it, and the result is worse compliance, not better. Intensity comes from the specificity of the requirement, never from shouting.
 - **Explain the cost rather than only forbidding.** Where a rule guards a real failure mode — padding, self-censoring, ungrounded verdicts — say *why* in one clause. A rule whose purpose is visible is followed far more reliably than a bare prohibition, and "do not pad" on its own pushes against a bias the model already has in the wrong direction.
@@ -332,7 +332,7 @@ Your output will be checked mechanically for at least:
 - neither body contains XML-tag framing such as `<skill_instructions>` or `<system-reminder>`;
 - neither body contains emoji;
 - both prompt files use LF endings, end with exactly one newline, and carry no trailing whitespace;
-- both bodies are between 600 and 2500 words.
+- both bodies are between 600 and 2600 words.
 
 ---
 
@@ -483,3 +483,23 @@ Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/tests-are-the
 **A fixture note.** Criterion 4 of the planned check — `buildDigest(batchOf(5), { width: 0 })` returning zero rows — cannot be used as a pass/fail test in this fixture, because the fixture's own `AGENTS.md` generalises "caller-supplied size" far enough to cover a digest width, which makes the alternative semantics legitimate. The criterion measured ambiguity the fixture created, not a defect in the plugin. What the run actually demonstrated is the more useful thing: a collision between a project rule and an existing test now has a defined procedure.
 
 **Still open:** `low` and `max` have never been exercised.
+
+### 9.10 Added after the variant-C re-run: the report language was guessed
+
+The variant-C re-run was invoked with the user's message containing **nothing but `/code-review --fix`** — no prose in any language, and the workspace's `AGENTS.md` is English. The run produced its **entire report in Spanish**, and the session log contains no occurrence of "Spanish", "español" or any other reasoning about language. It did not decide on Spanish; it drifted there, because §1.4's instruction ("the body must tell the agent to produce its **report in the user's language**") assumes a user language is available to read, and here there was none.
+
+The same defect had already fired in the other direction without being noticed: the variant-B `/simplify` run reported in Chinese for a user who had also typed only the bare command. That run happened to match the user's actual language, which is exactly why a guess is worse than a default — it is right often enough to stay hidden.
+
+**Second gap, found by the same question.** The scope contract said only that "a target named in the user's message … wins". Nothing said what to do with the rest of the message, so an appended requirement such as `/code-review --fix 用中文汇报` was left undefined: readable as a review target, or ignorable.
+
+**Fix.** Both bodies now key the report language to **the language the user has actually written in this session**, and name a fallback for the language-neutral case instead of leaving it to drift.
+
+The fallback went through three positions and landed on **English**. Chinese was chosen first, then reversed on the reasoning that this plugin is meant for general use: a Chinese fallback is wrong for every non-Chinese caller, and no per-user option justified the plumbing. A `reportLanguage` config was considered and rejected as too much machinery for one string — it would have needed config plumbing plus a schema-free `apply(ctx, config)` path — and the practical cost of the English fallback is small, because the primary rule still follows the caller's own words. The maintainer's own case keeps working: any session in which they have written Chinese reports in Chinese, and a bare slash command in a session with no prose at all can carry an appended hint, which the guidance rule below now makes binding.
+
+Both bodies also state that anything else the message carries — a focus, something to skip, the report language — **is guidance to follow, not a target to resolve**.
+
+Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/report-language`).
+
+**Note on the word ceiling.** Raised 2200 → 2500 → 2600. Every raise has been forced by a clause added in response to an observed end-to-end failure, never by padding, and the maintainer trimmed ~53 words of genuine redundancy at the first of them. A fixed number that keeps losing to load-bearing content is a poor control, so the enforceable invariant is the one review actually checks — no padding, no restatement — and length is tracked rather than capped rigidly. Further clauses should still be paid for by a comparable trim where one exists.
+
+**Still open:** `low` and `max` have never been exercised, and no run has yet supplied the report-language fallback with a genuinely language-bearing message in a language other than the fallback.

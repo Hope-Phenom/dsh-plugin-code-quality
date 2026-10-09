@@ -120,7 +120,7 @@ const checks = [
       for (const [label, text] of [['simplify', SIMPLIFY_PROMPT], ['code-review', CODE_REVIEW_PROMPT]]) {
         const count = words(text)
         if (count < 600) throw new Error(`${label} body is only ${count} words`)
-        if (count > 2500) throw new Error(`${label} body is ${count} words`)
+        if (count > 2600) throw new Error(`${label} body is ${count} words`)
         report.push(`${label}=${count}w`)
       }
       return report.join(' ')
@@ -153,6 +153,25 @@ const checks = [
         if (!pattern.test(SIMPLIFY_PROMPT)) throw new Error(`simplify body is missing ${what}`)
       }
       return 'the change set cannot be undone, and a workspace rule cannot authorize it'
+    },
+  },
+  {
+    id: 'prompts/report-language',
+    check() {
+      // Regression guard for the bare-invocation language guess: the agent
+      // produced a Spanish report for `/code-review --fix` and never mentioned
+      // a reason. Also guards appended guidance being read as a review target.
+      const required = [
+        [/language\s+the\s+user\s+has\s+actually\s+written/iu, "the key-to-the-user's-words rule"],
+        [/use\s+English rather than picking one/iu, 'the named fallback language'],
+        [/guidance\s+to\s+follow, not a target to resolve/iu, 'the extra-guidance rule'],
+      ]
+      for (const [label, text] of [['simplify', SIMPLIFY_PROMPT], ['code-review', CODE_REVIEW_PROMPT]]) {
+        for (const [pattern, what] of required) {
+          if (!pattern.test(text)) throw new Error(`${label} body is missing ${what}`)
+        }
+      }
+      return 'report language is keyed to the user with a named fallback, and extra guidance is honoured'
     },
   },
   {
