@@ -75,6 +75,26 @@ test('the code-review body keeps scratch artifacts out of the repository', () =>
   }
 })
 
+test('both bodies send child probes outside the repository', () => {
+  // Finding L1: a `low` run's finder children left two probe scripts in the
+  // repository root. The no-artifacts rule lived in the --fix section, which
+  // finders never receive, and nothing said where a probe may live.
+  for (const { label, text } of BODIES) {
+    assert.ok(
+      /temporary directory outside the repository/iu.test(text),
+      `${label} must say where a child's probe belongs`,
+    )
+    assert.ok(
+      /finder and\s+verifier alike/iu.test(text),
+      `${label} must apply the probe rule to every child, not only finders`,
+    )
+    assert.ok(
+      /contaminates the\s+change set under review/iu.test(text),
+      `${label} must say why a leftover probe matters`,
+    )
+  }
+})
+
 test('the simplify body refuses to invent a change set from committed history', () => {
   // Found by the clean-tree case. With no derivable range the run treated a
   // single committed root commit as "the code you changed", edited three files

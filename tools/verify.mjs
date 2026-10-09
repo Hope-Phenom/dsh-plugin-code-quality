@@ -192,6 +192,25 @@ const checks = [
     },
   },
   {
+    id: 'prompts/probe-location',
+    check() {
+      // Regression guard for finding L1: finder children left probe scripts in
+      // the repository root, because the only no-artifacts rule lived in the
+      // --fix section that finders never receive.
+      const required = [
+        [/temporary directory outside the repository/iu, "where a child's probe belongs"],
+        [/finder and\s+verifier alike/iu, 'that the rule covers every child'],
+        [/contaminates the\s+change set under review/iu, 'why a leftover probe matters'],
+      ]
+      for (const [label, text] of [['simplify', SIMPLIFY_PROMPT], ['code-review', CODE_REVIEW_PROMPT]]) {
+        for (const [pattern, what] of required) {
+          if (!pattern.test(text)) throw new Error(`${label} body is missing ${what}`)
+        }
+      }
+      return "child probes belong in a temp directory, never in the tree"
+    },
+  },
+  {
     id: 'prompts/empty-scope',
     check() {
       // Regression guard for the clean-tree case: with an empty diff the run

@@ -164,8 +164,9 @@ told to reproduce a mechanism, which needs a probe, and nothing tells them where
 write into the working tree. The parent cleaned up here, and only because it noticed; a parent that does not
 notice leaves exactly the artifact the rule exists to prevent, in a run that is not even in `--fix` mode.
 
-**Status: unfixed.** The rule needs to reach the agents that actually write the files, and the fix must say
-where a probe may live rather than only forbidding the tree.
+**Status: fixed.** Dispatch now tells every child — finder and verifier alike — that a probe belongs in a
+temporary directory outside the repository, never in the working tree, and must be deleted before it returns.
+Guarded by `prompts/probe-location` in both bodies. Re-running case 8 confirms it.
 
 ### 4.3 Cases 10a and 11 — passes
 

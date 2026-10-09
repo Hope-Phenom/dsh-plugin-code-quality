@@ -517,3 +517,13 @@ Run against a repository with nothing uncommitted, `/simplify` did not stop. It 
 **What the same batch confirmed.** `/code-review` on the identical empty tree behaved correctly: zero `subagent` calls, the one-line empty report, the failing ladder commands reported as information, and an explicit refusal to review committed code outside scope. So the asymmetry was between the two bodies, not between two runs.
 
 **Still open:** `low` has now passed; `max` and the remaining cases in `docs/BENCHMARK.md` have not been run.
+
+### 9.12 Fixed after the first benchmark round: children wrote probes into the tree
+
+The `low` run reported, unprompted, that its finder children had left two probe scripts in the repository root and that it had deleted them. The mechanism is straightforward and was nobody's mistake: finders are told to reproduce a mechanism, reproducing it needs a script, and **the only rule about where scratch files may live sat in the `## Fixing` section — which finders never receive, because finders run whether or not `--fix` was passed.**
+
+Two things made it worth fixing rather than noting. The cleanup happened only because this particular parent noticed and said so; a parent that does not notice leaves an artifact in the tree, in a run that is not even in `--fix` mode. And the failure is invisible to every offline gate, since nothing an agent writes at runtime can be seen by `npm test`.
+
+**Fix.** The Phase 1 dispatch list — what each child's prompt must carry — gained a clause applying to every child the command starts, finder and verifier alike: a probe belongs in a **temporary directory outside the repository**, never in the working tree and not even dot-prefixed, and the child must delete one before returning, because a file left behind contaminates the change set under review. The simplify body carries the same clause in its equivalent bullet.
+
+Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/probe-location`), which require the clause in both bodies because both fan out.
