@@ -17,6 +17,7 @@
   "author": "Hope.Phenom",
   "type": "module",
   "main": "lib/index.js",
+  "icon": "./assets/icon.svg",
   "exports": {
     ".": "./lib/index.js",
     "./skills": "./lib/skills.js",
@@ -28,6 +29,7 @@
   "files": [
     "lib",
     "locale",
+    "assets",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",
