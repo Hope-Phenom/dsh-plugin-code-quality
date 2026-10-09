@@ -41,7 +41,9 @@ the report reaching the user.
 Materialise both bodies to plain text, from the repository root:
 
 ```js
-node -e "const fs=require('fs'),p='C:/Users/dev/AppData/Local/Temp/dsh-qa';fs.mkdirSync(p,{recursive:true});(async()=>{for(const [n,u,k] of [['code-review','file:///F:/WorkSpace/dsh-plugin-code-quality/lib/prompts/code-review.js','CODE_REVIEW_PROMPT'],['simplify','file:///F:/WorkSpace/dsh-plugin-code-quality/lib/prompts/simplify.js','SIMPLIFY_PROMPT']]){const m=await import(u);fs.writeFileSync(p+'/'+n+'.md',m[k]+'\n')}})()"
+
+Run this from the repository root; it writes the two bodies to `%TEMP%/dsh-qa`.
+node -e "const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url'),p=path.join(process.env.TEMP,'dsh-qa');fs.mkdirSync(p,{recursive:true});(async()=>{for(const [n,f,k] of [['code-review','lib/prompts/code-review.js','CODE_REVIEW_PROMPT'],['simplify','lib/prompts/simplify.js','SIMPLIFY_PROMPT']]){const m=await import(pathToFileURL(path.resolve(f)).href);fs.writeFileSync(path.join(p,n+'.md'),m[k]+'\n')}})()"
 ```
 
 **Dependency: subagent nesting.** Both commands fan out, so an injected agent must be able to start children
@@ -64,12 +66,12 @@ The report is only part of the evidence. For every case, check:
 | Tree hygiene | `git status --porcelain` and `git ls-files --others --exclude-standard` |
 | Whether the report overclaims | Compare each claimed observation with the command output it cites |
 
-Session logs live at `C:\Users\dev\.dsh\sessions\--<workspace-slug>--\<session-id>\session.v4.jsonl.zstd`.
+Session logs live under `$DSH_HOME/sessions/--<workspace-slug>--/<session-id>/session.v4.jsonl.zstd`.
 They are multi-frame zstd: split on the `28 b5 2f fd` magic and decompress each frame separately.
 
 ## 2. Fixtures
 
-One repository, `F:\WorkSpace\dsh-code-quality-e2e`, whose committed state is healthy (12/12 checks). Each
+One repository, called `<fixture>` below, whose committed state is healthy (12/12 checks). Each
 variant is a patch against that commit, applied to a clean tree.
 
 **The working copies were deleted after the campaign.** They were scaffolding: neither the four directories nor
@@ -86,9 +88,9 @@ fixture from its description, and the baselines recorded here are the acceptance
 Reset between cases:
 
 ```powershell
-cd F:\WorkSpace\dsh-code-quality-e2e
+cd <fixture>
 git checkout -- .
-git apply F:\WorkSpace\dsh-code-quality-e2e-dirty<variant>.patch
+git apply <fixture>-dirty<variant>.patch
 git status --porcelain          # expect exactly the variant's files
 git ls-files --others --exclude-standard   # expect empty
 ```
