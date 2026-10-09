@@ -109,8 +109,8 @@ the row mapping (`src/report.js`).
 | 10a | `code-review`, nothing changed | clean clone | **run** — passed, 0 subagent calls, one-line empty report |
 | 10b | `simplify`, nothing changed | clean clone | **run** — failed, then **passed** after the S1 fix |
 | 11 | Explicit target argument | A | **run** — passed, 12 subagent calls, reviewed only the named file |
-| 12 | Report language, and appended guidance | A | not run |
-| 13 | Untracked file inside the diff | new variant D | not run |
+| 12 | Report language, and appended guidance | A | **run** — passed; Chinese message produced a Chinese report, and the extra words were not read as a target |
+| 13 | Untracked file inside the diff | variant D | **run** — passed; the only review target was invisible to `git diff HEAD` |
 | 14 | Model-initiated `simplify` (via the `skill` tool) | A | not run |
 | 15 | Plugin disable / uninstall | — | not run |
 | 16 | Non-git directory | copy of A | not run |
@@ -239,14 +239,50 @@ the pre-change modules into `$env:TEMP`** rather than into the tree, and the par
 `git status --porcelain --untracked-files=all` reported exactly the three modified files and zero untracked.
 Before the fix, the same command left two probe scripts in the repository root.
 
+### 4.8 Case 13 — an untracked file was the entire change set
+
+**Passed, and it is the sharpest case in the matrix.** Variant D is the clean base plus one untracked
+`src/digest.js`, so `git diff HEAD` is **empty** and the whole review target is invisible to a diff read; the
+file is reachable only by noticing `?? src/digest.js` in `git status --porcelain` and reading it. The suite is
+green at 12/12, because nothing tests the new file.
+
+The run walked the ladder, reported every rung's failure as information, found `git diff HEAD` empty, then read
+status, and concluded: "a file no committed range mentions — so the entire change set is that one file's
+addition". It reviewed it and found both planted defects with reproduced triggers — the loop starting at
+`index = 1`, so the first item of every batch is never rendered, and `options.width || 4` rewriting an
+explicit `0` — plus the raw, unclamped `width`, citing `AGENTS.md`. It also noticed that the file's `||`
+fallback sits directly above a `??` fallback for the sibling option. Two cleanup candidates were refuted
+correctly: the loop is not a re-implementation of `chunk` (`chunk` returns page arrays and throws below
+size 1), and a `slice`/`filter`/`map` collapse is not equivalent at `2.5`, `-1` or `'abc'`, so it would be a
+behaviour change. It then guarded against the pre/post-change trap in a way the body asks for but no earlier
+case had exercised: it confirmed the verifiers read the file **as present on disk**, since no committed
+version exists to mislead them.
+
+### 4.9 Case 12 — report language and appended guidance
+
+**Passed.** The message was `/code-review 请看看这次的改动`: Chinese prose, no language instruction, and words
+that could be mistaken for a target. The run reported in Chinese, giving the rule as its reason ("the user
+actually wrote Chinese this turn"), and stated explicitly that it did **not** re-parse 这次的改动 as a
+parseable target — it resolved scope from git and folded in the working tree.
+
+### 4.10 Three fixes confirmed by cases 12 and 13
+
+Both cases are independent evidence for fixes made earlier in the matrix, which is worth recording because
+each was previously supported only by its own failing run:
+
+- **A1 (fan-out arithmetic).** Both sent **8 finders at `medium`** — C1–C5 plus R, S *and* the conventions
+  angle. Every `medium` run before the fix sent 7, with no conventions child.
+- **L1 (probe location).** Both put finder and verifier probes in `$env:TEMP` and deleted them; case 12 said
+  so explicitly, and both closed with `git status --porcelain` showing only the expected files.
+- **The language fallback.** Case 13 reported in English for a bare command and gave the rule as its reason.
+
 ## 5. Open items
 
-1. ~~Finding L1~~ — fixed; re-running case 8 confirms it.
+1. ~~Finding L1~~ — fixed and confirmed by cases 9, 12 and 13.
 2. ~~Finding S1~~ — fixed; case 10b re-ran clean (see 4.6).
-3. Finding A1 — fixed; re-running case 9 confirms it.
-4. Cases 12 (language), 13 (untracked files), 14 (model-invoked), 15 (disable/uninstall), 16 (non-git
-   directory), 17 (large diff).
-5. `PORT-SPEC.md` §9.10's fallback rule has never been exercised with a message that actually carries a
-   language.
+3. ~~Finding A1~~ — fixed and confirmed twice by cases 12 and 13 (see 4.10).
+4. Cases 14 (model-invoked), 15 (disable/uninstall), 16 (non-git directory), 17 (large diff).
+5. `PORT-SPEC.md` §9.10's fallback rule now has evidence for the bare-command case (case 13) and the
+   language-bearing case (case 12); a message naming a language *other* than the user's own has not been run.
 6. The injected path has not been checked against the real path on the same case and fixture. Running a case
    both ways would settle whether the harness itself changes any verdict.
