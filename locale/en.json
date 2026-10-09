@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Code quality",
+    "description": "Adds /simplify and /code-review (alias /review) to the / menu: behaviour-preserving cleanups, and a multi-angle defect hunt with independent verification."
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "代码质量",
+    "description": "在 / 菜单里加上 /simplify（不改行为的清理）与 /code-review（多角度找缺陷 + 独立验证，/review 为别名）。"
+  }
+}
