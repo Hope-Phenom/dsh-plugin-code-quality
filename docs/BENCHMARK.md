@@ -293,8 +293,28 @@ scope substitution matters: a useful report under a scope the user never set is 
 1. ~~Finding L1~~ — fixed and confirmed by cases 9, 12 and 13.
 2. ~~Finding S1~~ — fixed; case 10b re-ran clean (see 4.6).
 3. ~~Finding A1~~ — fixed and confirmed twice by cases 12 and 13 (see 4.10).
-4. Cases 14 (model-invoked), 15 (disable/uninstall), 16 (non-git directory), 17 (large diff).
-5. `PORT-SPEC.md` §9.10's fallback rule now has evidence for the bare-command case (case 13) and the
+4. ~~Case 16 (non-git directory)~~ — failed, fixed, recorded in 4.11.
+5. Case 14 (model-invoked), 15 (disable/uninstall), 17 (large diff).
+6. `PORT-SPEC.md` §9.10's fallback rule now has evidence for the bare-command case (case 13) and the
    language-bearing case (case 12); a message naming a language *other* than the user's own has not been run.
-6. The injected path has not been checked against the real path on the same case and fixture. Running a case
+7. The injected path has not been checked against the real path on the same case and fixture. Running a case
    both ways would settle whether the harness itself changes any verdict.
+
+## 6. Findings so far
+
+| id | trigger | what it was | status |
+|---|---|---|---|
+| — | case 1 | `/simplify` reverted the entire diff | fixed (`prompts/revert-boundary`) |
+| — | case 3 | `/code-review` claimed the fan-out was unavailable and skipped verification | fixed (`prompts/fanout-not-optional`) |
+| — | case 6 | `--fix` changed semantics with surplus machinery, and reported an expectation as an observation | fixed (`prompts/fix-means-restore`) |
+| — | case 6 | `--fix` left its comparison harness in the tree | fixed (`prompts/no-scratch-artifacts`) |
+| — | case 6 | a cleanup finding could never be `CONFIRMED`, so a verifier dropped a real one | fixed (`prompts/cleanup-verified-own-terms`) |
+| — | case 7 | `--fix` was silent on whether a test may be rewritten | fixed (`prompts/tests-are-the-spec`) |
+| — | case 7 | the report language was invented when the message carried none | fixed (`prompts/report-language`) |
+| L1 | case 8 | finder children wrote probe scripts into the repository | fixed (`prompts/probe-location`) |
+| S1 | case 10b | an empty diff became the committed history, and three files were edited | fixed (`prompts/empty-scope`) |
+| A1 | case 9 | the table's angle counts were never tied to the finder call count | fixed (`prompts/fanout-arithmetic`) |
+| G1 | case 16 | an unresolvable repository became the whole tree | fixed (`prompts/no-repo-scope`) |
+
+Findings S1, A1, G1 and the three earlier fixes were each re-confirmed by a later independent case, which is
+recorded in 4.10 and in each `PORT-SPEC.md` §9.x entry.
