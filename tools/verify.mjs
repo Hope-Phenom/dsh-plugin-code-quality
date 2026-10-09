@@ -192,6 +192,23 @@ const checks = [
     },
   },
   {
+    id: 'prompts/empty-scope',
+    check() {
+      // Regression guard for the clean-tree case: with an empty diff the run
+      // substituted the committed root commit for the change set and edited
+      // three files, changing behaviour in a command that may not.
+      const required = [
+        [/print one line saying nothing is changed/iu, 'the concrete stop instruction'],
+        [/committed state is not a change set/iu, 'the refusal to substitute committed history'],
+        [/substitute for an empty diff/iu, 'the rule against naming a revision for the user'],
+      ]
+      for (const [pattern, what] of required) {
+        if (!pattern.test(SIMPLIFY_PROMPT)) throw new Error(`simplify body is missing ${what}`)
+      }
+      return 'an empty diff stops the run instead of becoming the committed history'
+    },
+  },
+  {
     id: 'prompts/cleanup-verified-own-terms',
     check() {
       // Regression guard for the second --fix end-to-end finding: a legitimate

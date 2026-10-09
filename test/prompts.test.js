@@ -75,6 +75,21 @@ test('the code-review body keeps scratch artifacts out of the repository', () =>
   }
 })
 
+test('the simplify body refuses to invent a change set from committed history', () => {
+  // Found by the clean-tree case. With no derivable range the run treated a
+  // single committed root commit as "the code you changed", edited three files
+  // (one of them outside any change set) and changed observable behaviour —
+  // in a command whose contract forbids behaviour changes.
+  const required = [
+    [/print one line saying nothing is changed/iu, 'the concrete stop instruction'],
+    [/committed state is not a change set/iu, 'the refusal to substitute committed history'],
+    [/substitute for an empty diff/iu, 'the rule against naming a revision for the user'],
+  ]
+  for (const [pattern, what] of required) {
+    assert.ok(pattern.test(SIMPLIFY_PROMPT), `simplify body is missing ${what}`)
+  }
+})
+
 test('both bodies key the report language to the user and state a fallback', () => {
   // Found by a --fix run whose user had typed only `/code-review --fix`: with
   // no language in the message to read, the agent picked Spanish and never
