@@ -1,0 +1,41 @@
+name: test
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, macos-latest, ubuntu-latest ]
+        node: [ '20', '22', '24' ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # The two prompt bodies are shipped to the model verbatim, and the tests reject
+      # a CR anywhere in them. Every platform checks out with a different
+      # core.autocrlf default, so this matrix is what proves the `* text=auto eol=lf`
+      # pinning in .gitattributes actually holds on a fresh clone.
+      - name: Unit tests
+        run: npm test
+
+      # Same checks as a readable PASS/FAIL report, including the ones that are
+      # awkward to express as assertions (word budget, framing, file inventory).
+      - name: Conformance report
+        run: npm run verify
