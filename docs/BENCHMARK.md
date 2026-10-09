@@ -72,7 +72,12 @@ They are multi-frame zstd: split on the `28 b5 2f fd` magic and decompress each 
 One repository, `F:\WorkSpace\dsh-code-quality-e2e`, whose committed state is healthy (12/12 checks). Each
 variant is a patch against that commit, applied to a clean tree.
 
-| Variant | Patch | Baseline | What it is for |
+**The working copies were deleted after the campaign.** They were scaffolding: neither the four directories nor
+the patch files named below exist any more, and the scratch directory that §1.1 materialises the bodies into
+was removed with them. This section is therefore the definition of record — a re-run has to rebuild each
+fixture from its description, and the baselines recorded here are the acceptance values.
+
+| Variant | Patch (deleted) | Baseline | What it is for |
 |---|---|---|---|
 | A | `dsh-code-quality-e2e-dirty.patch` | **8/12** | Every change is a regression. A correct repair converges on the committed shape, so repair and revert are easy to confuse — this is the case that first caught a full revert |
 | B | `dsh-code-quality-e2e-dirty-B.patch` | **15/15** | A healthy but messy diff: all checks pass, so the only work is cleanup. Tests that a green suite does not make a diff good |
