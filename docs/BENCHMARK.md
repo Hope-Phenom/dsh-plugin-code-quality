@@ -113,7 +113,7 @@ the row mapping (`src/report.js`).
 | 13 | Untracked file inside the diff | variant D | **run** — passed; the only review target was invisible to `git diff HEAD` |
 | 14 | Model-initiated `simplify` (via the `skill` tool) | A | not run |
 | 15 | Plugin disable / uninstall | — | not run |
-| 16 | Non-git directory | copy of A | not run |
+| 16 | Non-git directory | copy of A | **run** — failed; surveyed the whole tree instead of stopping |
 | 17 | Large diff (tens of files) | new fixture | not run |
 
 Cases 8–10, 12 and 14 need no new fixture. Cases 13 and 17 do. Cases 15 and 16 are environment cases.
@@ -275,6 +275,18 @@ each was previously supported only by its own failing run:
 - **L1 (probe location).** Both put finder and verifier probes in `$env:TEMP` and deleted them; case 12 said
   so explicitly, and both closed with `git status --porcelain` showing only the expected files.
 - **The language fallback.** Case 13 reported in English for a bare command and gave the rule as its reason.
+
+### 4.11 Case 16 — a non-git directory became the whole tree
+
+**Failed.** The copy has no `.git` anywhere up the tree and still carries variant A's three modified files, so
+the suite reports 8/12 while no revision range exists. Every git command returned `fatal: not a git
+repository`. The run declared its scope to be **all nine files**, said it had "treated every line as changed",
+and spent 17 `subagent` calls on a whole-repository audit — the same substitution as case 10b, one rung
+further out: a missing repository became the working tree. See `PORT-SPEC.md` §9.14. Status: **fixed**.
+
+The findings were good (one catches `process.exit` in the harness preempting Node's unhandled-rejection
+reporting, so a suite can print all green while the process is fatally errored), which is exactly why the
+scope substitution matters: a useful report under a scope the user never set is still the wrong command.
 
 ## 5. Open items
 

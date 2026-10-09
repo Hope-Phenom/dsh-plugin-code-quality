@@ -500,7 +500,7 @@ Both bodies also state that anything else the message carries — a focus, somet
 
 Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/report-language`).
 
-**Note on the word ceiling.** Raised 2200 → 2500 → 2600. Every raise has been forced by a clause added in response to an observed end-to-end failure, never by padding, and the maintainer trimmed ~53 words of genuine redundancy at the first of them. A fixed number that keeps losing to load-bearing content is a poor control, so the enforceable invariant is the one review actually checks — no padding, no restatement — and length is tracked rather than capped rigidly. Further clauses should still be paid for by a comparable trim where one exists.
+**Note on the word ceiling.** Raised 2200 → 2500 → 2600 → 2700. Every raise has been forced by a clause added in response to an observed end-to-end failure, never by padding, and the maintainer trimmed ~53 words of genuine redundancy at the first of them. A fixed number that keeps losing to load-bearing content is a poor control, so the enforceable invariant is the one review actually checks — no padding, no restatement — and length is tracked rather than capped rigidly. Further clauses should still be paid for by a comparable trim where one exists.
 
 **Still open:** `low` and `max` have never been exercised, and no run has yet supplied the report-language fallback with a genuinely language-bearing message in a language other than the fallback.
 
@@ -537,3 +537,15 @@ The level table gives `max` six correctness angles and four cleanup angles. The 
 Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/fanout-arithmetic`).
 
 **Not a defect: the result was still good.** All four cleanup angles produced findings, nine findings in total stayed inside the cap of 20, one was ranked `PLAUSIBLE` last as the `max` bias requires, two candidates were refuted with differential evidence, and the Phase 3 sweep ran a fuzz comparison of HEAD against the working tree before returning `NONE`. What the case establishes is that the arithmetic was ambiguous, not that pairing degraded this particular run.
+
+### 9.14 Added after the non-git-directory case: no repository became the whole tree
+
+Run in a directory with no `.git` anywhere up the tree, the scope ladder failed at its first rung — every git command returning `fatal: not a git repository` — and the run did not stop. It declared the scope to be **the entire tree**, all nine files, "treated every line as changed", and spent 17 `subagent` calls producing a whole-repository audit. Nobody asked for that: the command reviews a change set, and in that directory no change set exists.
+
+**The same substitution as §9.11, one rung further out.** There, a missing parent became the committed commit; here, a missing repository became the working tree. The body invited it: it lists "not a repository" among the failing git commands whose message the agent should "read and adapt rather than retrying", and then never says what adapting means for that particular failure. The empty-diff rule immediately after it does not apply, because "the working tree" is not a thing git can report without a repository to report it from. So the one failure mode the sentence names is the one it leaves undefined.
+
+The findings themselves were good — one of them, that `process.exit` in the test harness preempts Node's end-of-run unhandled-rejection reporting, so a suite can print every check green while the process is fatally errored, is a genuinely sharp observation. That is the problem rather than the defence: a useful report produced under a scope the user never set is still the wrong command, and the next run's substitution need not be so lucky.
+
+**Fix.** The scope paragraph now says that **if no repository can be resolved at all, print one line saying so and stop** — the whole tree is not a substitute for a change set, a survey of files the user never named is a different command, and **naming a path is the remedy**. Guarded by `test/prompts.test.js` and `tools/verify.mjs` (`prompts/no-repo-scope`).
+
+**Note on the word ceiling, again.** Raised 2600 → 2700 for this clause. Every raise in this document has been forced by a clause added after an observed end-to-end failure, and each such clause now carries a §9.x entry naming the run that produced it, so padding is detectable by asking which run a clause came from. The ceiling is therefore a tracking number, not a control; what is actually enforced is that every clause has a failure behind it.

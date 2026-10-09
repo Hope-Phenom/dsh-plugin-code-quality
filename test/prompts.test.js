@@ -31,7 +31,7 @@ test('both bodies are substantial documents, not stubs', () => {
   for (const { label, text } of BODIES) {
     const words = wordCount(text)
     assert.ok(words >= 600, `${label} body is only ${words} words`)
-    assert.ok(words <= 2600, `${label} body is ${words} words, over the budget`)
+    assert.ok(words <= 2700, `${label} body is ${words} words, over the budget`)
   }
 })
 
@@ -104,6 +104,20 @@ test('the code-review body pins the fan-out arithmetic to one child per angle', 
     [/One finder call per angle/iu, 'the one-child-per-angle rule'],
     [/never two angles to one child/iu, 'the reason pairing is forbidden'],
     [/conventions angle dispatches at every level/iu, 'the conventions angle level'],
+  ]
+  for (const [pattern, what] of required) {
+    assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)
+  }
+})
+
+test('the code-review body refuses to substitute the whole tree for a change set', () => {
+  // Found by the non-git-directory case: with no repository to resolve, the run
+  // reviewed all nine files and treated every line as changed, spending 17
+  // subagent calls on a survey the user never asked for.
+  const required = [
+    [/no repository can be resolved/iu, 'the stop rule for an unresolvable repository'],
+    [/whole tree is not a\s+substitute for a change set/iu, 'the refusal to substitute the tree'],
+    [/naming a path is the remedy/iu, 'the remedy'],
   ]
   for (const [pattern, what] of required) {
     assert.ok(pattern.test(CODE_REVIEW_PROMPT), `code-review body is missing ${what}`)

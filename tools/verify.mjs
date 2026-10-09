@@ -120,7 +120,7 @@ const checks = [
       for (const [label, text] of [['simplify', SIMPLIFY_PROMPT], ['code-review', CODE_REVIEW_PROMPT]]) {
         const count = words(text)
         if (count < 600) throw new Error(`${label} body is only ${count} words`)
-        if (count > 2600) throw new Error(`${label} body is ${count} words`)
+        if (count > 2700) throw new Error(`${label} body is ${count} words`)
         report.push(`${label}=${count}w`)
       }
       return report.join(' ')
@@ -225,6 +225,22 @@ const checks = [
         if (!pattern.test(CODE_REVIEW_PROMPT)) throw new Error(`code-review body is missing ${what}`)
       }
       return 'the table angle counts are the finder call count, conventions included'
+    },
+  },
+  {
+    id: 'prompts/no-repo-scope',
+    check() {
+      // Regression guard for the non-git-directory case: with no repository to
+      // resolve, the run surveyed the whole tree instead of stopping.
+      const required = [
+        [/no repository can be resolved/iu, 'the stop rule for an unresolvable repository'],
+        [/whole tree is not a\s+substitute for a change set/iu, 'the refusal to substitute the tree'],
+        [/naming a path is the remedy/iu, 'the remedy'],
+      ]
+      for (const [pattern, what] of required) {
+        if (!pattern.test(CODE_REVIEW_PROMPT)) throw new Error(`code-review body is missing ${what}`)
+      }
+      return 'an unresolvable repository stops the run instead of widening to the whole tree'
     },
   },
   {
