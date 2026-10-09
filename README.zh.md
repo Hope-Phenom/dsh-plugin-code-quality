@@ -15,7 +15,7 @@
 ## 安装
 
 ```powershell
-dsh plugin --profile <你的 profile> add dsh-plugin-code-quality
+dsh plugin --profile <你的 profile> add @hope_phenom/dsh-plugin-code-quality
 ```
 
 然后重启该 profile（或让 HMR 接管），在输入框敲 `/` —— `simplify`、`code-review`、`review` 会出现在 skills 分组下。

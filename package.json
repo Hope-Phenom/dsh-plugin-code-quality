@@ -1,5 +1,5 @@
 {
-  "name": "dsh-plugin-code-quality",
+  "name": "@hope_phenom/dsh-plugin-code-quality",
   "version": "0.1.0",
   "description": "DeepSeek Harness plugin adding two code-quality commands as user-invocable skills: /simplify (behavior-preserving cleanups over the current diff) and /code-review (multi-angle bug hunt with an independent verifier pass), plus /review as an alias.",
   "keywords": [

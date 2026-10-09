@@ -15,7 +15,7 @@ Both commands follow the design that mainstream code review tooling has converge
 ## Install
 
 ```powershell
-dsh plugin --profile <your-profile> add dsh-plugin-code-quality
+dsh plugin --profile <your-profile> add @hope_phenom/dsh-plugin-code-quality
 ```
 
 Then restart the profile (or let HMR pick it up) and type `/` in the composer — `simplify`, `code-review` and `review` appear under the skills group.

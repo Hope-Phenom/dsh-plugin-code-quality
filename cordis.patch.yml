@@ -10,4 +10,4 @@
 # across versions even if the package name ever changes.
 - insert:
     - id: code-quality
-      name: dsh-plugin-code-quality
+      name: '@hope_phenom/dsh-plugin-code-quality'
