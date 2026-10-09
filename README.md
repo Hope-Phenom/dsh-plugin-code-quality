@@ -26,6 +26,26 @@ For local development against a checkout:
 dsh plugin --profile <your-profile> add F:\path\to\dsh-plugin-code-quality
 ```
 
+### Upgrading
+
+`add` records a caret range, and pnpm keeps whatever exact version is already in `pnpm-lock.yaml`, so
+running the install command again with the bare package name will **not** move you to a newer release. Name
+the version explicitly, or remove the plugin and add it again:
+
+```powershell
+dsh plugin --profile <your-profile> add @hope_phenom/dsh-plugin-code-quality@0.1.1
+```
+
+Then fully restart the profile. Replacing a package that is already loaded needs a new module generation —
+HMR only covers bundles that were not loaded before.
+
+Behind a registry mirror the mirror itself can lag a release by minutes to hours, and pnpm's local metadata
+cache outlives that lag. When the version you asked for cannot be found, pass the upstream registry:
+
+```powershell
+dsh plugin --profile <your-profile> add @hope_phenom/dsh-plugin-code-quality@0.1.1 --registry=https://registry.npmjs.org
+```
+
 ### Requirements
 
 - DSH with `@deepseek-ai/dsh-skill` and `@deepseek-ai/dsh-client-ui-skill` composed. Both are part of the shipped standard preset, so a stock install already has them.

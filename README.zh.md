@@ -26,6 +26,22 @@ dsh plugin --profile <你的 profile> add @hope_phenom/dsh-plugin-code-quality
 dsh plugin --profile <你的 profile> add F:\path\to\dsh-plugin-code-quality
 ```
 
+### 升级
+
+`add` 记录的是脱字号区间，而 pnpm 会沿用 `pnpm-lock.yaml` 里已钉住的精确版本，所以**再次执行同一条安装命令并不会把你带到新版本**。要么显式写出目标版本，要么先移除再安装：
+
+```powershell
+dsh plugin --profile <你的 profile> add @hope_phenom/dsh-plugin-code-quality@0.1.1
+```
+
+然后**完整重启**该 profile。替换一个已经加载的包需要新的 JS 模块代——HMR 只覆盖此前未加载过的 bundle。
+
+如果你在镜像源后面：镜像可能比上游晚几分钟到几小时，而 pnpm 本地的元数据缓存会比这活得更久。当你要的版本在镜像上还找不到时，显式指定上游 registry：
+
+```powershell
+dsh plugin --profile <你的 profile> add @hope_phenom/dsh-plugin-code-quality@0.1.1 --registry=https://registry.npmjs.org
+```
+
 ### 前置条件
 
 - DSH 组合了 `@deepseek-ai/dsh-skill` 与 `@deepseek-ai/dsh-client-ui-skill`。两者都在随包发布的 standard preset 里，原装安装即有。
