@@ -111,8 +111,8 @@ the row mapping (`src/report.js`).
 | 11 | Explicit target argument | A | **run** — passed, 12 subagent calls, reviewed only the named file |
 | 12 | Report language, and appended guidance | A | **run** — passed; Chinese message produced a Chinese report, and the extra words were not read as a target |
 | 13 | Untracked file inside the diff | variant D | **run** — passed; the only review target was invisible to `git diff HEAD` |
-| 14 | Model-initiated `simplify` (via the `skill` tool) | A | not run |
-| 15 | Plugin disable / uninstall | — | not run |
+| 14 | Model-initiated `simplify` (via the `skill` tool) | A | **run** — passed; `code-review` refused with a clean error |
+| 15 | Plugin disable / uninstall | — | **not runnable here** — see 4.13 |
 | 16 | Non-git directory | copy of A | **run** — failed; surveyed the whole tree instead of stopping |
 | 17 | Large diff (tens of files) | new fixture | not run |
 
@@ -288,16 +288,53 @@ The findings were good (one catches `process.exit` in the harness preempting Nod
 reporting, so a suite can print all green while the process is fatally errored), which is exactly why the
 scope substitution matters: a useful report under a scope the user never set is still the wrong command.
 
+### 4.12 Case 14 — the model-invocation policy
+
+**Passed.** Probed from a fresh subagent, which reported the catalog `avalonia-design, commit,
+diagnose-windows-sandbox-acl, frontend-design, office-docx, office-pptx, office-xlsx, simplify` — `simplify`
+present, `code-review` absent — and then called the `skill` tool with `code-review` and got
+
+```text
+Error: skill "code-review" is not available for model invocation
+```
+
+So the `modelInvocable` split is enforced at the tool boundary with a clean message rather than by omission
+from a list. Asked whether it would reach for `simplify` when told to clean up a change it had just made, it
+said yes and named the deciding words from the catalog description ("Clean up the code you changed"). That
+covers the routing decision; the body it would then execute is the same body cases 1 and 2 exercise.
+
+### 4.13 Case 15 — not runnable from this environment
+
+The `desktop` profile is owned by the running Electron application, and the CLI refuses to touch it:
+
+```text
+$ dsh --profile desktop --dump-config
+error: profile "desktop" is managed exclusively by the Electron application
+```
+
+That removes the only offline way to observe composition, because `--dump-config` is what would show whether
+the row survives a disable. `dsh plugin` itself proxies to `pnpm`, so there is no CLI-level enable/disable
+either; a disable is a `disabled: true` override on the row id `code-quality` (`- id: code-quality` from the
+bundle patch), which is what the Settings toggle writes.
+
+**To run it:** toggle the plugin off in Settings, restart, and confirm the three skills leave the `/` menu and
+the profile boots without a dangling row; then toggle it on and confirm they return. The mechanical half is
+already evidenced — the row id the override must target is `code-quality`, and the plugin manager writes
+exactly `disabled: !enabled` on the matched item.
+
 ## 5. Open items
 
 1. ~~Finding L1~~ — fixed and confirmed by cases 9, 12 and 13.
 2. ~~Finding S1~~ — fixed; case 10b re-ran clean (see 4.6).
 3. ~~Finding A1~~ — fixed and confirmed twice by cases 12 and 13 (see 4.10).
 4. ~~Case 16 (non-git directory)~~ — failed, fixed, recorded in 4.11.
-5. Case 14 (model-invoked), 15 (disable/uninstall), 17 (large diff).
-6. `PORT-SPEC.md` §9.10's fallback rule now has evidence for the bare-command case (case 13) and the
+5. ~~Case 14 (model-invoked)~~ — passed, recorded in 4.12.
+6. Case 15 (disable/uninstall) — not runnable from this environment; procedure recorded in 4.13.
+7. Case 17 (large diff) — not run; needs a fixture of tens of files, and the report it produces would be the
+   largest of the matrix.
+8. `PORT-SPEC.md` §9.10's fallback rule now has evidence for the bare-command case (case 13) and the
    language-bearing case (case 12); a message naming a language *other* than the user's own has not been run.
-7. The injected path has not been checked against the real path on the same case and fixture. Running a case
+9. The injected path has not been checked against the real path on the same case and fixture. Running a case
    both ways would settle whether the harness itself changes any verdict.
 
 ## 6. Findings so far
